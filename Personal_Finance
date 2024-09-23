@@ -1,0 +1,136 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import json
+import os
+
+class FinanceTracker:
+    def __init__(self, data_file='finance_data.json'):
+        """
+        Initialize the FinanceTracker with a specified data file.
+        Load existing data if the file exists.
+        
+        Parameters:
+            data_file (str): Path to the JSON data file.
+        """
+        self.data_file = data_file
+        self.load_data()
+        
+    def load_data(self):
+        """
+        Load financial data from a JSON file.
+        If the file does not exist, initialize an empty DataFrame.
+        """
+        if os.path.exists(self.data_file):
+            with open(self.data_file, 'r') as f:
+                self.data = pd.DataFrame(json.load(f))
+        else:
+            self.data = pd.DataFrame(columns=['Date', 'Description', 'Amount', 'Category', 'Type'])
+    
+    def save_data(self):
+        """
+        Save the current financial data to a JSON file.
+        """
+        with open(self.data_file, 'w') as f:
+            json.dump(self.data.to_dict(orient='records'), f)
+
+    def add_transaction(self, date, description, amount, category, transaction_type):
+        """
+        Add a new transaction to the finance tracker.
+        
+        Parameters:
+            date (str): The date of the transaction (YYYY-MM-DD).
+            description (str): Description of the transaction.
+            amount (float): Amount of the transaction.
+            category (str): Category of the transaction (e.g., Food, Rent).
+            transaction_type (str): Type of transaction ('Income' or 'Expense').
+        """
+        new_transaction = {
+            'Date': date,
+            'Description': description,
+            'Amount': amount,
+            'Category': category,
+            'Type': transaction_type
+        }
+        self.data = self.data.append(new_transaction, ignore_index=True)
+        self.save_data()
+        print(f"Added {transaction_type}: {description} of ${amount} on {date}.")
+
+    def view_transactions(self):
+        """
+        Display all transactions in a tabular format.
+        """
+        if self.data.empty:
+            print("No transactions available.")
+        else:
+            print(self.data)
+
+    def visualize_expenses(self):
+        """
+        Visualize expenses by category using a pie chart.
+        """
+        if self.data[self.data['Type'] == 'Expense'].empty:
+            print("No expenses to visualize.")
+            return
+        
+        expense_data = self.data[self.data['Type'] == 'Expense']
+        category_expenses = expense_data.groupby('Category')['Amount'].sum()
+
+        plt.figure(figsize=(10, 6))
+        category_expenses.plot(kind='pie', autopct='%1.1f%%', startangle=90)
+        plt.title('Expenses by Category')
+        plt.ylabel('')
+        plt.show()
+
+    def visualize_income_vs_expenses(self):
+        """
+        Visualize income versus expenses using a bar chart.
+        """
+        if self.data.empty:
+            print("No transactions to visualize.")
+            return
+
+        summary = self.data.groupby('Type')['Amount'].sum()
+        summary.plot(kind='bar', color=['green', 'red'])
+        plt.title('Income vs Expenses')
+        plt.ylabel('Amount ($)')
+        plt.xticks(rotation=0)
+        plt.show()
+
+def main():
+    tracker = FinanceTracker()
+
+    while True:
+        print("\nPersonal Finance Tracker")
+        print("1. Add Transaction")
+        print("2. View Transactions")
+        print("3. Visualize Expenses")
+        print("4. Visualize Income vs Expenses")
+        print("5. Exit")
+        choice = input("Select an option: ")
+
+        if choice == '1':
+            date = input("Enter date (YYYY-MM-DD): ")
+            description = input("Enter description: ")
+            amount = float(input("Enter amount: "))
+            category = input("Enter category: ")
+            transaction_type = input("Enter transaction type (Income/Expense): ")
+            tracker.add_transaction(date, description, amount, category, transaction_type)
+        
+        elif choice == '2':
+            tracker.view_transactions()
+        
+        elif choice == '3':
+            tracker.visualize_expenses()
+        
+        elif choice == '4':
+            tracker.visualize_income_vs_expenses()
+        
+        elif choice == '5':
+            print("Exiting the program.")
+            break
+        
+        else:
+            print("Invalid option, please try again.")
+
+if __name__ == "__main__":
+    main()
